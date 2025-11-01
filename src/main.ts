@@ -1,12 +1,14 @@
-// In src/main.ts
 import { open } from '@tauri-apps/plugin-dialog'
 import { readDir } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
+import Handsontable from 'handsontable'
 
-// Hält die Liste der Dateipfade
+import 'handsontable/styles/handsontable.min.css';
+import 'handsontable/styles/ht-theme-main.min.css';
+
+
 let selectedPdfPaths: string[] = []
 
-// DOM-Elemente holen, wenn das Fenster geladen ist
 document.addEventListener('DOMContentLoaded', () => {
   const selectFilesBtn = document.querySelector('#select-files-btn')
   const selectFolderBtn = document.querySelector('#select-folder-btn')
@@ -19,9 +21,7 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })
 
-/**
- * Öffnet den Dialog zur Auswahl von EINER oder MEHREREN PDF-Dateien
- */
+
 async function handleSelectFiles() {
   const result = await open({
     title: 'PDF-Dateien auswählen',
@@ -33,42 +33,33 @@ async function handleSelectFiles() {
   })
 
   if (Array.isArray(result)) {
-    // Wenn mehrere Dateien ausgewählt wurden (string[])
     selectedPdfPaths = result
   } else if (result) {
-    // Wenn nur eine Datei ausgewählt wurde (string)
     selectedPdfPaths = [result]
   } else {
-    // Dialog wurde abgebrochen (null)
     selectedPdfPaths = []
   }
 
-  updateFileListUI()
+  updateFileUI()
 }
 
-/**
- * Öffnet den Dialog zur Auswahl eines ORDNERs und liest PDFs darin
- */
 async function handleSelectFolder() {
   const result = await open({
     title: 'PDF-Ordner auswählen',
-    directory: true, // WICHTIG: Schaltet in den Ordner-Modus
+    directory: true,
     multiple: false
   })
 
   if (typeof result === 'string') {
-    // result ist der Pfad zum Ordner
     try {
       const entries = await readDir(result)
 
-      // 1. Nur die relevanten PDF-Einträge filtern
       const pdfEntries = entries.filter(
-        entry => entry.name?.endsWith('.pdf') && !entry.isDirectory
+        entry => entry.name?.toLowerCase().endsWith('.pdf') && !entry.isDirectory
       )
 
-      // 2. Die Pfade asynchron zusammensetzen
       selectedPdfPaths = await Promise.all(
-        pdfEntries.map(entry => join(result, entry.name!)) // '!' ist sicher, da wir null-Namen gefiltert haben
+        pdfEntries.map(entry => join(result, entry.name!))
       )
 
     } catch (e) {
@@ -77,30 +68,32 @@ async function handleSelectFolder() {
     }
 
   } else {
-    // Dialog wurde abgebrochen
     selectedPdfPaths = []
   }
 
-  updateFileListUI()
+  updateFileUI()
 }
 
-/**
- * Zeigt die ausgewählten Dateinamen in der HTML-Liste an
- */
-function updateFileListUI() {
-  const fileList = document.querySelector('#file-list')
-  if (!fileList) return
+function updateFileUI() {
+  if (!hot) return
 
-  // Liste leeren
-  fileList.innerHTML = ''
+  const tableData = selectedPdfPaths.map(path => {
+    const lastSeparatorIndex = Math.max(
+      path.lastIndexOf('/'),
+      path.lastIndexOf('\\')
+    )
+    const fileName = path.substring(lastSeparatorIndex + 1)
 
-  // Liste füllen (nur Dateiname, nicht den ganzen Pfad)
-  for (const path of selectedPdfPaths) {
-    const li = document.createElement('li')
-    // Extrahiert den Dateinamen aus dem Pfad
-    li.textContent = path.split('\\').pop()?.split('/').pop() ?? 'Unbekannte Datei'
-    fileList.appendChild(li)
-  }
+    return {
+      pdfName: fileName,
+      fullPath: path,
+      rechnungsNr: null,
+      datum: null,
+      betrag: null
+    }
+  })
+
+  hot.loadData(tableData)
 }
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -132,3 +125,70 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateUnderlinePosition()
 })
+
+
+function ellipsisRenderer(
+  this: Handsontable.Core,
+  _instance: Handsontable.Core,
+  td: HTMLTableCellElement,
+  _row: number,
+  _col: number,
+  _prop: string | number,
+  value: Handsontable.CellValue,
+  _cellProperties: Handsontable.CellProperties
+) {
+  Handsontable.renderers.TextRenderer.apply(this, arguments as any)
+
+  if (value !== null && value !== undefined) {
+    td.title = String(value)
+  }
+}
+
+let hot: Handsontable | null = null
+
+document.addEventListener('DOMContentLoaded', () => {
+  const container = document.querySelector('#data-grid')
+  if (!container) return
+
+  hot = new Handsontable(container, {
+    colHeaders: ['PDF-Datei'],
+    columns: [
+      {
+        data: 'pdfName',
+        readOnly: true,
+        className: 'htEllipsis',
+        renderer: ellipsisRenderer
+      },
+      { data: 'rechnungsNr' },
+      { data: 'datum', type: 'date', dateFormat: 'YYYY-MM-DD' },
+      { data: 'betrag', type: 'numeric', numericFormat: { pattern: '0.00 €' } },
+      {},
+      {},
+      {},
+      {},
+      {},
+      {},
+      {}
+    ],
+    rowHeaders: false,
+    stretchH: 'all',
+    autoColumnSize: false,
+    themeName: 'ht-theme-main-dark-auto',
+    licenseKey: 'non-commercial-and-evaluation'
+  })
+})
+
+/*function loadDataIntoTable(apiData: any[]) {
+  if (hot) {
+    hot.loadData(apiData)
+  }
+}
+
+function getDataFromTable() {
+  if (hot) {
+    const editedData = hot.getSourceData()
+    console.log(editedData)
+    return editedData
+  }
+  return []
+}*/
