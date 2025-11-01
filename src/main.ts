@@ -1,14 +1,49 @@
+/**
+ * Main application file for the PDF data management tool.
+ * This file handles PDF file selection, folder browsing, and data table management.
+ *
+ * Key Features:
+ * - PDF file selection via file dialog
+ * - Folder browsing with PDF filtering
+ * - Interactive data table with Handsontable
+ * - PDF file opening functionality
+ *
+ * Dependencies:
+ * - @tauri-apps/plugin-dialog for file/folder selection
+ * - @tauri-apps/plugin-fs for filesystem operations
+ * - @tauri-apps/api/path for path manipulation
+ * - @tauri-apps/plugin-opener for opening files
+ * - Handsontable for data grid functionality
+ */
+
 import { open } from '@tauri-apps/plugin-dialog'
 import { readDir } from '@tauri-apps/plugin-fs'
 import { join } from '@tauri-apps/api/path'
 import Handsontable from 'handsontable'
+import { openPath } from '@tauri-apps/plugin-opener';
 
 import 'handsontable/styles/handsontable.min.css';
 import 'handsontable/styles/ht-theme-main.min.css';
 
+/**
+ * Interface representing a row of PDF data in the table
+ */
+interface PdfDataRow {
+  pdfName: string
+  fullPath: string
+  rechnungsNr: string | null
+  datum: string | null
+  betrag: number | null
+}
 
+/**
+ * Array storing paths of selected PDF files
+ */
 let selectedPdfPaths: string[] = []
 
+/**
+ * Initialize event listeners when DOM content is loaded
+ */
 document.addEventListener('DOMContentLoaded', () => {
   const selectFilesBtn = document.querySelector('#select-files-btn')
   const selectFolderBtn = document.querySelector('#select-folder-btn')
@@ -21,7 +56,9 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 })
 
-
+/**
+ * Handle PDF file selection via file dialog
+ */
 async function handleSelectFiles() {
   const result = await open({
     title: 'PDF-Dateien auswählen',
@@ -43,6 +80,9 @@ async function handleSelectFiles() {
   updateFileUI()
 }
 
+/**
+ * Handle folder selection and filter PDF files
+ */
 async function handleSelectFolder() {
   const result = await open({
     title: 'PDF-Ordner auswählen',
@@ -74,6 +114,9 @@ async function handleSelectFolder() {
   updateFileUI()
 }
 
+/**
+ * Update the file UI with selected PDF data
+ */
 function updateFileUI() {
   if (!hot) return
 
@@ -96,6 +139,9 @@ function updateFileUI() {
   hot.loadData(tableData)
 }
 
+/**
+ * Initialize navigation button event listeners
+ */
 document.addEventListener('DOMContentLoaded', () => {
   const nav = document.querySelector('.sliding-nav') as HTMLElement
   const buttons = Array.from(
@@ -126,7 +172,9 @@ document.addEventListener('DOMContentLoaded', () => {
   updateUnderlinePosition()
 })
 
-
+/**
+ * Custom renderer for ellipsis in table cells
+ */
 function ellipsisRenderer(
   this: Handsontable.Core,
   _instance: Handsontable.Core,
@@ -144,21 +192,25 @@ function ellipsisRenderer(
   }
 }
 
+/**
+ * Handsontable instance for data grid
+ */
 let hot: Handsontable | null = null
 
+/**
+ * Initialize Handsontable data grid
+ */
 document.addEventListener('DOMContentLoaded', () => {
   const container = document.querySelector('#data-grid')
   if (!container) return
 
   hot = new Handsontable(container, {
+    data: [],
     colHeaders: ['PDF-Datei'],
+    className: 'htEllipsis',
+    renderer: ellipsisRenderer,
     columns: [
-      {
-        data: 'pdfName',
-        readOnly: true,
-        className: 'htEllipsis',
-        renderer: ellipsisRenderer
-      },
+      { data: 'pdfName', readOnly: true, className: 'htEllipsis htLink' },
       { data: 'rechnungsNr' },
       { data: 'datum', type: 'date', dateFormat: 'YYYY-MM-DD' },
       { data: 'betrag', type: 'numeric', numericFormat: { pattern: '0.00 €' } },
@@ -166,10 +218,19 @@ document.addEventListener('DOMContentLoaded', () => {
       {},
       {},
       {},
-      {},
-      {},
       {}
     ],
+
+    async afterOnCellMouseDown(_event, coords) {
+      if (coords.col === 0 && hot) {
+        const rowData = hot.getSourceDataAtRow(coords.row) as PdfDataRow
+        if (rowData && rowData.fullPath) {
+          await openPath(rowData.fullPath)
+        }
+      }
+    },
+
+    minSpareRows: 0,
     rowHeaders: false,
     stretchH: 'all',
     autoColumnSize: false,
@@ -177,18 +238,3 @@ document.addEventListener('DOMContentLoaded', () => {
     licenseKey: 'non-commercial-and-evaluation'
   })
 })
-
-/*function loadDataIntoTable(apiData: any[]) {
-  if (hot) {
-    hot.loadData(apiData)
-  }
-}
-
-function getDataFromTable() {
-  if (hot) {
-    const editedData = hot.getSourceData()
-    console.log(editedData)
-    return editedData
-  }
-  return []
-}*/
