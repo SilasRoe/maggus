@@ -38,10 +38,10 @@ interface AiProduct {
   menge?: number | null
   waehrung?: string | null
   preis?: number | null
-  nummerRechnung?: string | null
   gelieferteMenge?: number | null
 }
 interface AiResponse {
+  nummerRechnung?: string | null
   produkte?: AiProduct[]
 }
 
@@ -197,7 +197,6 @@ async function handleReseachStart() {
 
   try {
     const data = hot.getSourceData() as PdfDataRow[]
-
     const aiResults = await Promise.all(data.map(async (row, index) => {
       if (!row.fullPath) return null
 
@@ -246,7 +245,7 @@ async function handleReseachStart() {
             newRow.preis = prod.preis
           } else {
             newRow.gelieferteMenge = prod.gelieferteMenge
-            newRow.nummerRechnung = prod.nummerRechnung
+            newRow.nummerRechnung = aiResult.nummerRechnung
           }
 
           newTableData.push(newRow)

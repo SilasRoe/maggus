@@ -1,6 +1,7 @@
-EINGABE: Du bekommst als INPUT eine einzige Zeichenkette mit dem vollständigen Markdown-Inhalt einer PDF (PDF wurde in Markdown umgewandelt).
+EINGABE: Du bekommst als INPUT den Roh-Text einer Rechnung.
+Das Layout und die Tabellenstruktur werden ausschließlich durch LEERZEICHEN (Whitespace) dargestellt. Es gibt keine Markdown-Tabellenstriche.
 
-AUFGABE: Extrahiere alle relevanten Informationen einer Rechnung aus dem Markdown und liefere exakt ein einziges gültiges JSON-Objekt als einzige Ausgabe. Keine Erklärungen, keine zusätzlichen Texte, nur JSON.
+AUFGABE: Extrahiere alle relevanten Informationen einer Rechnung aus dem Text und liefere exakt ein einziges gültiges JSON-Objekt als einzige Ausgabe. Keine Erklärungen, keine zusätzlichen Texte, nur JSON.
 
 ERWARTETES JSON-SCHEMA:
 {
@@ -14,11 +15,13 @@ ERWARTETES JSON-SCHEMA:
 }
 
 FORMAT- UND NORMALISIERUNGSREGELN:
-- Zahlen: JSON-Zahlen, Dezimalpunkt, keine Tausendertrennzeichen.
-- Produkte: wenn keine Produkte erkennbar, "produkte": [].
-- Felder, nicht gefunden => null.
-- Wenn mehrere mögliche Rechnungsnummern/Daten vorhanden sind, wähle diejenige, die klar als "Fattura", "Invoice", "Rechnung" o. ä. gekennzeichnet ist.
-- Ausgabe darf nur die Felder aus diesem Schema enthalten — keine zusätzlichen Felder.
+1. LAYOUT & SPALTEN: Die Spalten sind nur durch Leerzeichen getrennt. Achte genau darauf, welche Zahlenblöcke zu welcher Produktbeschreibung gehören (stehen oft in derselben Zeile weit rechts).
+2. ZAHLEN-FORMAT (WICHTIG): Zahlen enthalten im Roh-Text oft Leerzeichen (z.B. "2 3 , 0 0" oder "9 , 9 5"). Du MUSST alle Leerzeichen innerhalb der Zahl entfernen ("2 3 , 0 0" -> 23.00).
+3. ZAHLEN: JSON-Zahlen, Dezimalpunkt, keine Tausendertrennzeichen.
+4. PRODUKTE: Wenn keine Produkte erkennbar, "produkte": [].
+5. FELDER: Nicht gefunden => null.
+6. RECHNUNGSNUMMER: Wenn mehrere Nummern vorhanden sind, wähle diejenige, die klar als "Fattura", "Invoice" o. ä. gekennzeichnet ist.
+7. AUSGABE: Darf nur die Felder aus diesem Schema enthalten — keine zusätzlichen Felder.
 
 BEISPIEL-AUSGABE:
 {
@@ -26,11 +29,13 @@ BEISPIEL-AUSGABE:
     {
       "produkt":"Produkt A",
       "gelieferteMenge":1000
+    },
+    {
+      "produkt":"Produkt B",
+      "gelieferteMenge":1500
     }
   ],
-  "nummerRechnung": "CT123412"
+  "nummerRechnung":"INV-12345"
 }
-
-WICHTIG: Rückgabe = ausschließlich ein JSON-Objekt, perfekt parsebar. Keine sonstigen Ausgaben.
 
 EINGABE:
