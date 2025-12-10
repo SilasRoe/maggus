@@ -661,19 +661,19 @@ document.addEventListener('DOMContentLoaded', () => {
     className: 'htEllipsis',
     renderer: ellipsisRenderer,
     columns: [
-      { data: 'pdfName', readOnly: true, className: 'htEllipsis htLink pdf-with-checkbox', renderer: pdfNameRenderer },
-      { data: 'datumAuftrag', type: 'date', dateFormat: 'DD.MM.YYYY', dateFormats: ['DD.MM.YYYY'], correctFormat: true },
-      { data: 'nummerAuftrag' },
-      { data: 'kunde' },
-      { data: 'lieferant' },
-      { data: 'produkt' },
-      { data: 'menge', type: 'numeric' },
-      { data: 'waehrung' },
-      { data: 'preis', type: 'numeric', numericFormat: { pattern: '0.00 €' } },
-      { data: 'datumRechnung', type: 'date', dateFormat: 'DD.MM.YYYY', dateFormats: ['DD.MM.YYYY'], correctFormat: true },
-      { data: 'nummerRechnung' },
-      { data: 'gelieferteMenge', type: 'numeric' },
-      { data: 'anmerkungen', type: 'text' }
+      { data: 'pdfName', readOnly: true, className: 'htEllipsis htLink pdf-with-checkbox', renderer: pdfNameRenderer, width: 100 },
+      { data: 'datumAuftrag', type: 'date', dateFormat: 'DD.MM.YYYY', dateFormats: ['DD.MM.YYYY'], correctFormat: true, width: 75 },
+      { data: 'nummerAuftrag', width: 50 },
+      { data: 'kunde', width: 120 },
+      { data: 'lieferant', width: 120 },
+      { data: 'produkt', width: 160 },
+      { data: 'menge', type: 'numeric', width: 40 },
+      { data: 'waehrung', width: 40 },
+      { data: 'preis', type: 'numeric', numericFormat: { pattern: '0.00 €' }, width: 50 },
+      { data: 'datumRechnung', type: 'date', dateFormat: 'DD.MM.YYYY', dateFormats: ['DD.MM.YYYY'], correctFormat: true, width: 75 },
+      { data: 'nummerRechnung', width: 50 },
+      { data: 'gelieferteMenge', type: 'numeric', width: 40 },
+      { data: 'anmerkungen', type: 'text', width: 50 }
     ],
     copyPaste: true,
     allowInsertRow: false,
@@ -723,10 +723,12 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     },
-
+    width: '100%',
+    height: '100%',
+    stretchH: 'all',
+    preventOverflow: 'horizontal',
     minSpareRows: 0,
     rowHeaders: false,
-    stretchH: 'all',
     autoColumnSize: false,
     themeName: 'ht-theme-main-dark-auto',
     licenseKey: 'non-commercial-and-evaluation'
@@ -735,18 +737,6 @@ document.addEventListener('DOMContentLoaded', () => {
   container.addEventListener('contextmenu', (e) => {
     e.preventDefault()
   })
-
-  const themeToggle = document.querySelector('#theme-toggle-input') as HTMLInputElement
-  if (themeToggle) {
-    themeToggle.addEventListener('change', () => {
-      if (hot) {
-        const theme = themeToggle.checked ? 'light' : 'dark'
-        hot.updateSettings({
-          themeName: theme === 'light' ? 'ht-theme-main-light-auto' : 'ht-theme-main-dark-auto'
-        })
-      }
-    })
-  }
 
   requestAnimationFrame(() => setupHeaderCheckbox())
 })

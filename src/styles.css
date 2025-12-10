@@ -5,14 +5,14 @@
 }
 
 :root {
-  font-family: Inter, Avenir, Helvetica, Arial, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
   font-size: 16px;
   line-height: 24px;
   font-weight: 400;
 
   /* Base colors (light theme defaults) */
   --background-color: #f6f6f6;
-  --text-color: #0f0f0f;
+  --text-color: #000000;
 
   /* UI tokens */
   --button-bg: #c4c4c4;
@@ -45,18 +45,25 @@
   --table-cell-bg: var(--background-color);
 }
 
-html,
-body {
+html {
   height: 100%;
-  margin: 0;
-  padding: 0;
-  background-color: var(--background-color, #f6f6f6);
-  color: var(--text-color, #0f0f0f);
+  width: 100%;
+  background-color: var(--background-color);
+  transition: var(--background-color) 0.3s ease;
+  overflow: hidden;
 }
 
 body {
+  height: 100%;
+  width: 100%;
+  margin: 0;
   padding: 1.5rem;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--text-color);
+  background-color: var(--background-color);
 }
 
 button:disabled {
@@ -69,7 +76,7 @@ button:disabled {
   padding: 0.25em 0.5em;
   border: #5f5f5f;
   font-weight: 500;
-  font-family: inherit;
+  font-family: inherit !important;
   color: var(--text-color, #ffffff);
   background-color: var(--button-bg, #5f5f5f);
   outline: none;
@@ -93,7 +100,21 @@ button:disabled {
 
 h1 {
   text-align: left;
-  color: var(--text-color, #0f0f0f);
+  color: var(--text-color, #000000);
+}
+
+.app-header,
+.upload-section,
+.sliding-nav {
+  flex: 0 0 auto;
+}
+
+#data-grid {
+  flex: 1 1 auto;
+  width: 100%;
+  overflow: hidden;
+  margin-top: 1rem;
+  position: relative;
 }
 
 .app-header {
@@ -110,6 +131,11 @@ h1 {
 .header-left,
 .header-right {
   flex: 1;
+}
+
+.handsontable,
+.handsontable .htCore {
+  font-family: inherit !important;
 }
 
 /* Header checkbox wrapper for first column */
@@ -303,17 +329,21 @@ h1 {
   background-color: var(--table-cell-bg) !important;
 }
 
+[data-theme="light"] .handsontable .htCore td {
+  color: var(--text-color, #000000) !important;
+}
+
 [data-theme="light"] .handsontable .htCore th {
   background-color: var(--table-header-bg) !important;
   /* header */
-  color: var(--text-color) !important;
+  color: var(--text-color, #000000) !important;
   font-weight: 600;
 }
 
 [data-theme="light"] .handsontable .htCore td:first-child {
   /* Ensure first column cells (data rows) also use header bg in light mode */
   background-color: var(--table-header-bg) !important;
-  color: var(--text-color) !important;
+  color: var(--text-color, #000000) !important;
   font-weight: 600;
 }
 
@@ -321,6 +351,7 @@ h1 {
   /* Ensure first column cells (data rows) also use header bg in dark mode */
   background-color: var(--table-header-bg) !important;
   color: var(--text-color) !important;
+  font-weight: 600;
 }
 
 
@@ -442,7 +473,7 @@ h1 {
   position: fixed;
   top: 20px;
   right: 100px;
-  font-family: sans-serif;
+  font-family: inherit !important;
   font-size: 13px;
   font-weight: 600;
   color: var(--text-color, #333);
@@ -452,11 +483,86 @@ h1 {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.1);
   z-index: 10001;
   display: none;
-  /* Wird per JS eingeblendet */
 }
 
-/* Dark Mode Anpassung */
 [data-theme="dark"] #progress-text {
   background-color: #3a3a3a;
   color: #f6f6f6;
+}
+
+[data-theme="light"] .handsontable {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .handsontable .htCore td,
+[data-theme="light"] .handsontable .htCore th {
+  color: #000000 !important;
+}
+
+[data-theme="light"] .handsontable .htCore td,
+[data-theme="light"] .handsontable .htCore th {
+  border-right: 1px solid #e0e0e0 !important;
+  border-bottom: 1px solid #e0e0e0 !important;
+  border-top: none !important;
+  border-left: none !important;
+}
+
+[data-theme="light"] .handsontable .htCore td:first-child,
+[data-theme="light"] .handsontable .htCore th:first-child {
+  border-right: 1px solid #e0e0e0 !important;
+}
+
+[data-theme="light"] .handsontable .wtBorder {
+  background-color: #e0e0e0 !important;
+}
+
+.handsontable,
+.handsontable .ht_master,
+.handsontable .wtHolder {
+  background-color: var(--background-color) !important;
+}
+
+[data-theme="light"] .handsontable .htCore td {
+  background-color: var(--table-cell-bg) !important;
+}
+
+:root {
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #bbbbbb;
+  --scrollbar-thumb-hover: #999999;
+}
+
+[data-theme="dark"] {
+  --scrollbar-track: transparent;
+  --scrollbar-thumb: #4f4f4f;
+  --scrollbar-thumb-hover: #6f6f6f;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--scrollbar-track);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 10px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--scrollbar-thumb) var(--background-color);
 }
