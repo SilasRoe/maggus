@@ -232,7 +232,7 @@ function setProgress(current: number, total: number) {
   if (current === 0 && total > 0) {
     percent = 1;
   } else if (current > 0) {
-    percent = 5 + ((current / total) * 95);
+    percent = 1 + ((current / total) * 99);
   }
 
   bar.style.width = `${percent}%`;

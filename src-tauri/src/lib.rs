@@ -1,6 +1,8 @@
+use base64::{engine::general_purpose, Engine as _};
 use dotenv::dotenv;
 use serde_json::{json, Value};
 use std::env;
+use std::fs;
 use std::process::Command;
 use tauri::command;
 
@@ -13,30 +15,62 @@ async fn analyze_document(path: String, doc_type: String) -> Result<Value, Strin
     dotenv().ok();
     let api_key = env::var("MISTRAL_API_KEY").map_err(|_| "API Key fehlt")?;
 
-    // --- ÄNDERUNG: pdftotext statt pdf_oxide ---
-    // Wir nutzen -layout, um die Tabellenstruktur visuell zu erhalten
-    // Wir nutzen -enc UTF-8 für korrekte Sonderzeichen
-    // "-" am Ende sorgt dafür, dass der Output direkt zurückgegeben wird (stdout)
+    let mut extracted_text = String::new();
+    let mut layout_instruction = String::new();
+
     let output = Command::new("pdftotext")
         .args(&["-layout", "-enc", "UTF-8", &path, "-"])
-        .output()
-        .map_err(|e| format!("Konnte pdftotext nicht ausführen: {}", e))?;
-
-    if !output.status.success() {
-        let err_msg = String::from_utf8_lossy(&output.stderr);
-        return Err(format!(
-            "Fehler beim Lesen der PDF (pdftotext): {}",
-            err_msg
-        ));
+        .output();
+    if let Ok(out) = output {
+        if out.status.success() {
+            extracted_text = String::from_utf8_lossy(&out.stdout).to_string();
+        }
     }
 
-    let extracted_text = String::from_utf8_lossy(&output.stdout).to_string();
+    if extracted_text.trim().len() < 50 {
+        let file_bytes = fs::read(&path).map_err(|e| format!("Konnte Datei nicht lesen: {}", e))?;
 
-    // Debugging: Zeigt dir im Terminal exakt, was die KI sehen wird
-    println!(
-        "--- DEBUG TEXT START ---\n{}\n--- DEBUG TEXT END ---",
-        extracted_text
-    );
+        let b64_doc = general_purpose::STANDARD.encode(file_bytes);
+
+        let client = reqwest::Client::new();
+        let ocr_body = json!({
+            "model": "mistral-ocr-latest",
+            "document": {
+                "type": "document_url",
+                "document_url": format!("data:application/pdf;base64,{}", b64_doc)
+            }
+        });
+
+        let ocr_res = client
+            .post("https://api.mistral.ai/v1/ocr")
+            .header("Authorization", format!("Bearer {}", api_key))
+            .json(&ocr_body)
+            .send()
+            .await
+            .map_err(|e| format!("OCR Request fehlgeschlagen: {}", e))?;
+
+        if !ocr_res.status().is_success() {
+            return Err(format!("Mistral OCR Fehler: Status {}", ocr_res.status()));
+        }
+
+        let ocr_json: Value = ocr_res.json().await.map_err(|e| e.to_string())?;
+
+        if let Some(pages) = ocr_json.get("pages").and_then(|p| p.as_array()) {
+            extracted_text = pages
+                .iter()
+                .filter_map(|p| p.get("markdown").and_then(|m| m.as_str()))
+                .collect::<Vec<&str>>()
+                .join("\n\n");
+        } else {
+            return Err("Mistral OCR hat kein verständliches Ergebnis geliefert.".to_string());
+        }
+
+        layout_instruction =
+            "DAS LAYOUT IST MARKDOWN. Tabellen sind mit Pipes '|' markiert. Nutze diese Struktur."
+                .to_string();
+    } else {
+        layout_instruction = "DAS LAYOUT IST 'WHITESPACE'. Spalten sind nur durch Leerzeichen getrennt. Es gibt keine Linien. Erschließe die Spalten visuell.".to_string();
+    }
 
     // Prompt Auswahl
     let base_prompt = if doc_type == "rechnung" {
@@ -46,7 +80,10 @@ async fn analyze_document(path: String, doc_type: String) -> Result<Value, Strin
     };
 
     // Prompt zusammenbauen
-    let full_prompt = format!("{}\n\nDokument Inhalt:\n{}", base_prompt, extracted_text);
+    let full_prompt = format!(
+        "{}\n\nWICHTIGE LAYOUT-INFO: {}\n\nDokument Inhalt:\n{}",
+        base_prompt, layout_instruction, extracted_text
+    );
 
     let client = reqwest::Client::new();
     let body = json!({

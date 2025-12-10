@@ -1,5 +1,4 @@
 EINGABE: Du bekommst als INPUT den Roh-Text einer Rechnung.
-Das Layout und die Tabellenstruktur werden ausschließlich durch LEERZEICHEN (Whitespace) dargestellt. Es gibt keine Markdown-Tabellenstriche.
 
 AUFGABE: Extrahiere alle relevanten Informationen einer Rechnung aus dem Text und liefere exakt ein einziges gültiges JSON-Objekt als einzige Ausgabe. Keine Erklärungen, keine zusätzlichen Texte, nur JSON.
 
@@ -15,7 +14,7 @@ ERWARTETES JSON-SCHEMA:
 }
 
 FORMAT- UND NORMALISIERUNGSREGELN:
-1. LAYOUT & SPALTEN: Die Spalten sind nur durch Leerzeichen getrennt. Achte genau darauf, welche Zahlenblöcke zu welcher Produktbeschreibung gehören (stehen oft in derselben Zeile weit rechts).
+
 2. ZAHLEN-FORMAT (WICHTIG): Zahlen enthalten im Roh-Text oft Leerzeichen (z.B. "2 3 , 0 0" oder "9 , 9 5"). Du MUSST alle Leerzeichen innerhalb der Zahl entfernen ("2 3 , 0 0" -> 23.00).
 3. ZAHLEN: JSON-Zahlen, Dezimalpunkt, keine Tausendertrennzeichen.
 4. PRODUKTE: Wenn keine Produkte erkennbar, "produkte": [].

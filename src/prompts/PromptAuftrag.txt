@@ -1,5 +1,4 @@
 EINGABE: Du bekommst als INPUT den Roh-Text einer Auftragsbestätigung.
-Das Layout und die Tabellenstruktur werden ausschließlich durch LEERZEICHEN (Whitespace) dargestellt. Es gibt keine Markdown-Tabellenstriche.
 
 AUFGABE: Extrahiere die folgenden relevanten Informationen einer Auftragsbescheinigung aus dem Text und liefere exakt ein einziges gültiges JSON-Objekt als einzige Ausgabe. Keine Erläuterungen, keine Textteile, kein Markdown — nur reines JSON.
 
@@ -16,7 +15,7 @@ ERWARTETES JSON-SCHEMA (Pflichtfelder wenn vorhanden, sonst null / leeres Array)
 }
 
 FORMAT- UND NORMALISIERUNGSREGELN:
-1. LAYOUT & SPALTEN: Die Spalten sind nur durch Leerzeichen getrennt. Du musst erkennen, welche Werte visuell untereinander stehen (z.B. steht "Quantity" über "2000").
+
 2. ZAHLEN-FORMAT (WICHTIG): Im Roh-Text enthalten Zahlen oft Leerzeichen (z.B. "1 0 0 , 00" oder "2 , 5 5"). Du MUSST diese Leerzeichen entfernen, bevor du die Zahl interpretierst ("2 , 5 5" -> 2.55).
 3. ZAHLEN: Ausgabe als JSON-Zahlen (z. B. 1234.56). Dezimaltrennzeichen ist der Punkt.
 4. PRODUKTNAMEN: Bereinige überflüssige Whitespaces, behalte Sonderzeichen.
