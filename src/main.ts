@@ -89,6 +89,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const selectFolderBtn = document.querySelector('#select-folder-btn') as HTMLButtonElement;
   const startResearchBtn = document.querySelector('#start-process-btn') as HTMLButtonElement;
   const themeToggle = document.querySelector('#theme-toggle-input') as HTMLInputElement;
+  const exportBtn = document.querySelector('#export-excel-btn') as HTMLButtonElement;
 
   if (selectFilesBtn) {
     selectFilesBtn.addEventListener('click', handleSelectFiles);
@@ -109,6 +110,10 @@ document.addEventListener('DOMContentLoaded', () => {
     themeToggle.addEventListener('change', toggleTheme);
     // Ensure the UI and document theme reflect the current toggle state on load
     toggleTheme();
+  }
+
+  if (exportBtn) {
+    exportBtn.addEventListener('click', handleExportExcel);
   }
 });
 
@@ -778,4 +783,65 @@ function toggleTheme() {
   if (themeLabel) {
     themeLabel.setAttribute('aria-pressed', String(isChecked))
   }
+}
+
+async function handleExportExcel() {
+  if (!hot) return
+
+  const allData = hot.getSourceData() as PdfDataRow[]
+  
+  const confirmedData = allData.filter(row => row.confirmed)
+
+  if (confirmedData.length === 0) {
+    showToast("Nessuna riga confermata trovata per l'esportazione.", 'info')
+    return
+  }
+
+  try {
+    document.body.style.cursor = 'wait'
+    
+    const msg = await invoke<string>('export_to_excel', { data: confirmedData })
+    
+    if (msg !== "Demolizione") {
+        showToast(msg, 'success')
+    }
+
+  } catch (err) {
+    console.error(err)
+    showToast(`${err}`, 'error')
+  } finally {
+    document.body.style.cursor = 'default'
+  }
+}
+
+/**
+ * Zeigt ein minimalistisches Pop-Up (Toast) an.
+ * @param text Nachricht
+ * @param type 'success' | 'error' | 'info'
+ */
+function showToast(text: string, type: 'success' | 'error' | 'info' = 'info') {
+  let container = document.getElementById('toast-container')
+  if (!container) {
+    container = document.createElement('div')
+    container.id = 'toast-container'
+    container.className = 'toast-container'
+    document.body.appendChild(container)
+  }
+
+  const toast = document.createElement('div')
+  toast.className = `toast ${type}`
+  toast.textContent = text
+
+  container.appendChild(toast)
+
+  requestAnimationFrame(() => {
+    toast.classList.add('show')
+  })
+
+  setTimeout(() => {
+    toast.classList.remove('show')
+    toast.addEventListener('transitionend', () => {
+      toast.remove()
+    })
+  }, 3000)
 }

@@ -5,11 +5,143 @@ use std::env;
 use std::fs;
 use std::time::Duration;
 use tauri::command;
+use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::ShellExt;
 use tokio::time::sleep;
 
 const PROMPT_AUFTRAG: &str = include_str!("../../src/prompts/PromptAuftrag.txt");
 const PROMPT_RECHNUNG: &str = include_str!("../../src/prompts/PromptRechnung.txt");
+
+#[derive(serde::Deserialize)]
+#[serde(rename_all = "camelCase")]
+struct ExportRow {
+    datum_auftrag: Option<String>,
+    nummer_auftrag: Option<String>,
+    kunde: Option<String>,
+    lieferant: Option<String>,
+    produkt: Option<String>,
+    menge: Option<f64>,
+    waehrung: Option<String>,
+    preis: Option<f64>,
+    datum_rechnung: Option<String>,
+    nummer_rechnung: Option<String>,
+    gelieferte_menge: Option<f64>,
+    anmerkungen: Option<String>,
+}
+
+#[command]
+async fn export_to_excel(app: tauri::AppHandle, data: Vec<ExportRow>) -> Result<String, String> {
+    if data.is_empty() {
+        return Err("Nessun dato selezionato.".to_string());
+    }
+
+    // 1. Datei auswählen (bestehende oder neue)
+    let file_path_opt = app
+        .dialog()
+        .file()
+        .add_filter("Excel", &["xlsx", "xls", "xlsm"])
+        .blocking_pick_file();
+
+    let path_buf = match file_path_opt {
+        Some(p) => p
+            .into_path()
+            .map_err(|e| format!("Errore di percorso: {}", e))?,
+        None => return Ok("Interruzione da parte dell'utente".to_string()),
+    };
+    let path = path_buf.as_path();
+
+    // 2. Workbook laden oder neu erstellen
+    let mut book = if path.exists() {
+        umya_spreadsheet::reader::xlsx::read(path).map_err(|e| {
+            format!(
+                "Errore durante la lettura del file, il file è aperto?: {}",
+                e
+            )
+        })?
+    } else {
+        umya_spreadsheet::new_file()
+    };
+
+    // 3. Arbeitsblatt wählen (Index 0 = erstes Blatt)
+    let sheet = book
+        .get_sheet_mut(&0)
+        .ok_or("Non sono riuscito a trovare il primo foglio di lavoro.".to_string())?;
+
+    // 4. Nächste freie Zeile finden
+    // get_highest_row liefert die letzte Zeile mit Daten. +1 für die neue Zeile.
+    // Wenn Datei leer ist (row=0 oder 1), fangen wir Header an.
+    let mut next_row = sheet.get_highest_row() + 1;
+
+    // Optional: Header schreiben, falls Datei neu/leer scheint
+    if next_row <= 1 {
+        let headers: [&str; 12] = [
+            "Datum",
+            "Auftrag Nr.",
+            "Kunde",
+            "Lieferant",
+            "Produkt",
+            "Menge",
+            "Währung",
+            "Preis",
+            "Rechnung Datum",
+            "Rechnung Nr.",
+            "Gelief. Menge",
+            "Anmerkungen",
+        ];
+        for (col, text) in headers.iter().enumerate() {
+            sheet.get_cell_mut(((col + 1) as u32, 1)).set_value(*text);
+        }
+        next_row = 2;
+    }
+
+    // 5. Daten anhängen
+    for row_data in data {
+        if let Some(v) = row_data.datum_auftrag {
+            sheet.get_cell_mut((1, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.nummer_auftrag {
+            sheet.get_cell_mut((2, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.kunde {
+            sheet.get_cell_mut((3, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.lieferant {
+            sheet.get_cell_mut((4, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.produkt {
+            sheet.get_cell_mut((5, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.menge {
+            sheet.get_cell_mut((6, next_row)).set_value_number(v);
+        }
+        if let Some(v) = row_data.waehrung {
+            sheet.get_cell_mut((7, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.preis {
+            sheet.get_cell_mut((8, next_row)).set_value_number(v);
+        }
+        if let Some(v) = row_data.datum_rechnung {
+            sheet.get_cell_mut((9, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.nummer_rechnung {
+            sheet.get_cell_mut((10, next_row)).set_value(v);
+        }
+        if let Some(v) = row_data.gelieferte_menge {
+            sheet.get_cell_mut((11, next_row)).set_value_number(v);
+        }
+        if let Some(v) = row_data.anmerkungen {
+            sheet.get_cell_mut((12, next_row)).set_value(v);
+        }
+
+        next_row += 1;
+    }
+
+    // 6. Speichern
+    let _ = umya_spreadsheet::writer::xlsx::write(&book, path)
+        .map_err(|e| format!("Errore durante il salvataggio: {}", e))?;
+
+    Ok(format!("Record aggiunti con successo."))
+}
 
 #[command]
 async fn analyze_document(
@@ -261,7 +393,7 @@ pub fn run() {
         .plugin(tauri_plugin_fs::init())
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
-        .invoke_handler(tauri::generate_handler![analyze_document])
+        .invoke_handler(tauri::generate_handler![analyze_document, export_to_excel])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
