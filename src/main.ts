@@ -676,13 +676,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (rowData.confirmed) {
           classList.push('confirmed-row')
         }
-
-        if (row > 0) {
-          const prevRowData = hot.getSourceDataAtRow(row - 1) as PdfDataRow
-          if (prevRowData && prevRowData.fullPath !== rowData.fullPath) {
-            classList.push('pdf-group-start')
-          }
-        }
       }
 
       cellProps.className = classList.join(' ')

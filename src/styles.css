@@ -327,7 +327,6 @@ h1 {
 
 [data-theme="light"] .handsontable .htCore td,
 [data-theme="light"] .handsontable .htCore th {
-  border: 1px solid rgba(0, 0, 0, 0.08) !important;
   background-color: var(--table-cell-bg) !important;
 }
 
@@ -356,17 +355,11 @@ h1 {
   font-weight: 600;
 }
 
-
-[data-theme="light"] .handsontable .ht_master .wtBorder,
-[data-theme="light"] .handsontable .wtHolder .wtBorder {
-  border-color: rgba(0, 0, 0, 0.12) !important;
-}
-
 /* Dark mode Handsontable adjustments: keep editable cells same as page bg,
    header and first (PDF) column slightly lighter than background. */
 [data-theme="dark"] .handsontable .htCore td,
 [data-theme="dark"] .handsontable .htCore th {
-  border: 1px solid rgba(255, 255, 255, 0.04) !important;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   background-color: var(--table-cell-bg) !important;
   color: var(--text-color) !important;
 }
@@ -377,12 +370,6 @@ h1 {
   /* header + first column */
   color: var(--text-color) !important;
   font-weight: 600;
-}
-
-
-[data-theme="dark"] .handsontable .ht_master .wtBorder,
-[data-theme="dark"] .handsontable .wtHolder .wtBorder {
-  border-color: rgba(255, 255, 255, 0.06) !important;
 }
 
 /* Confirmed row styling */
@@ -499,19 +486,6 @@ h1 {
 [data-theme="light"] .handsontable .htCore td,
 [data-theme="light"] .handsontable .htCore th {
   color: #000000 !important;
-}
-
-[data-theme="light"] .handsontable .htCore td,
-[data-theme="light"] .handsontable .htCore th {
-  border-right: 1px solid #e0e0e0 !important;
-  border-bottom: 1px solid #e0e0e0 !important;
-  border-top: none !important;
-  border-left: none !important;
-}
-
-[data-theme="light"] .handsontable .htCore td:first-child,
-[data-theme="light"] .handsontable .htCore th:first-child {
-  border-right: 1px solid #e0e0e0 !important;
 }
 
 [data-theme="light"] .handsontable .wtBorder {
@@ -650,6 +624,6 @@ h1 {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
 }
 
-.pdf-group-start {
-  border-top: 15px solid var(--background-color) !important;
+[data-theme] .handsontable .htCore td.pdf-group-start {
+  border-top: 15px solid #2f2f2f !important;
 }

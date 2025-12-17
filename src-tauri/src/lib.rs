@@ -212,7 +212,7 @@ async fn export_to_excel(
                 sheet.get_cell_mut((18, r)).set_value(v);
             }
 
-            for col in 1..=13 {
+            for col in 1..=18 {
                 if let Some(style) = column_styles.get((col - 1) as usize) {
                     sheet.set_style((col, r), style.clone());
                 }
