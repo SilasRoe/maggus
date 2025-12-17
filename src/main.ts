@@ -172,15 +172,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
   settingsBtn?.addEventListener("click", async () => {
-    const [apiKey, pdfPath, excelPath] = await Promise.all([
+    const [apiKey, pdfPath, excelPath, theme] = await Promise.all([
       invoke<string>("get_api_key"),
       store?.get<string>("defaultPdfPath"),
       store?.get<string>("defaultExcelPath"),
+      store?.get<string>("defaultTheme"),
     ]);
 
     if (apiKey) apiKeyInput.value = apiKey;
     if (pdfPath) pdfPathInput.value = pdfPath;
     if (excelPath) excelPathInput.value = excelPath;
+    if (theme) themeToggle.checked = theme === "light";
 
     settingsModal!.style.display = "flex";
   });
@@ -195,8 +197,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       await store?.set("defaultPdfPath", pdfPathInput.value);
       await store?.set("defaultExcelPath", excelPathInput.value);
+      const newTheme = themeToggle.checked ? "light" : "dark";
+      await store?.set("defaultTheme", newTheme);
 
       await store?.save();
+
+      document.documentElement.setAttribute("data-theme", newTheme);
 
       settingsModal!.style.display = "none";
       showToast("Impostazioni salvate", "success");

@@ -338,6 +338,11 @@ h1 {
   background-color: var(--table-cell-bg) !important;
 }
 
+[data-theme="light"] .handsontable .htCore td,
+[data-theme="light"] .handsontable .htCore th {
+  border: 1px solid var(--border-color) !important;
+}
+
 [data-theme="light"] .handsontable .htCore td {
   color: var(--text-color, #000000) !important;
 }
