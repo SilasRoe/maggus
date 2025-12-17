@@ -19,17 +19,13 @@
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'self' https://api.mistral.ai; img-src 'self' asset: https://asset.localhost data:"
     }
   },
   "bundle": {
     "active": true,
     "targets": "all",
-    "icon": [
-      "icons/icon.ico"
-    ],
-    "externalBin": [
-      "binaries/pdftotext"
-    ]
+    "icon": ["icons/icon.ico"],
+    "externalBin": ["binaries/pdftotext"]
   }
 }

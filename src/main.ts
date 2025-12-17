@@ -174,10 +174,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
   settingsBtn?.addEventListener("click", async () => {
-    const apiKey = await store?.get<string>("apiKey");
-    const pdfPath = await store?.get<string>("defaultPdfPath");
-    const excelPath = await store?.get<string>("defaultExcelPath");
-    const theme = await store?.get<string>("defaultTheme");
+    const [apiKey, pdfPath, excelPath, theme] = await Promise.all([
+      invoke<string>("get_api_key"),
+      store?.get<string>("defaultPdfPath"),
+      store?.get<string>("defaultExcelPath"),
+      store?.get<string>("defaultTheme"),
+    ]);
 
     if (apiKey) apiKeyInput.value = apiKey;
     if (pdfPath) pdfPathInput.value = pdfPath;
@@ -192,27 +194,33 @@ document.addEventListener("DOMContentLoaded", async () => {
   });
 
   saveSettingsBtn?.addEventListener("click", async () => {
-    await store?.set("apiKey", apiKeyInput.value);
-    await store?.set("defaultPdfPath", pdfPathInput.value);
-    await store?.set("defaultExcelPath", excelPathInput.value);
-    await store?.set("defaultTheme", themeSelect.value);
+    try {
+      await invoke("save_api_key", { key: apiKeyInput.value });
 
-    await store?.save();
+      await store?.set("defaultPdfPath", pdfPathInput.value);
+      await store?.set("defaultExcelPath", excelPathInput.value);
+      await store?.set("defaultTheme", themeSelect.value);
 
-    if (themeSelect.value === "dark") {
-      document.documentElement.setAttribute("data-theme", "dark");
-      (
-        document.getElementById("theme-toggle-input") as HTMLInputElement
-      ).checked = false;
-    } else {
-      document.documentElement.setAttribute("data-theme", "light");
-      (
-        document.getElementById("theme-toggle-input") as HTMLInputElement
-      ).checked = true;
+      await store?.save();
+
+      if (themeSelect.value === "dark") {
+        document.documentElement.setAttribute("data-theme", "dark");
+        (
+          document.getElementById("theme-toggle-input") as HTMLInputElement
+        ).checked = false;
+      } else {
+        document.documentElement.setAttribute("data-theme", "light");
+        (
+          document.getElementById("theme-toggle-input") as HTMLInputElement
+        ).checked = true;
+      }
+
+      settingsModal!.style.display = "none";
+      showToast("Einstellungen gespeichert", "success");
+    } catch (err) {
+      console.error("Fehler beim Speichern:", err);
+      showToast(`Fehler beim Speichern: ${err}`, "error");
     }
-
-    settingsModal!.style.display = "none";
-    showToast("Einstellungen gespeichert", "success");
   });
 
   store.get<string>("defaultTheme").then((theme) => {
@@ -227,7 +235,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   store.get<string>("defaultPdfPath").then((path) => {
     if (path) {
-      console.log("Lade Standard-PDF-Ordner:", path);
       loadPdfsFromDirectory(path);
     }
   });
@@ -247,11 +254,9 @@ if (selectFolderBtn) {
 }
 
 if (themeToggle) {
-  // Improve accessibility and ensure the visual switch styles are in sync
   themeToggle.setAttribute("role", "switch");
   themeToggle.setAttribute("aria-checked", String(themeToggle.checked));
   themeToggle.addEventListener("change", toggleTheme);
-  // Ensure the UI and document theme reflect the current toggle state on load
   toggleTheme();
 }
 

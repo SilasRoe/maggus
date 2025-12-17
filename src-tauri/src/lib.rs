@@ -1,6 +1,7 @@
 use base64::{engine::general_purpose, Engine as _};
 use chrono::NaiveDate;
 use dotenv::dotenv;
+use keyring::Entry;
 use regex::{Captures, Regex};
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
@@ -12,7 +13,6 @@ use std::time::Duration;
 use tauri::{command, AppHandle};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::ShellExt;
-use tauri_plugin_store::StoreExt;
 use tokio::time::sleep;
 
 const PROMPT_AUFTRAG: &str = include_str!("../../src/prompts/PromptAuftrag.txt");
@@ -68,6 +68,30 @@ fn adjust_formula(formula: &str, old_row: u32, new_row: u32) -> String {
         }
     })
     .to_string()
+}
+
+#[tauri::command]
+fn save_api_key(key: String) -> Result<(), String> {
+    let entry = Entry::new("com.silas.maggus", "mistral_api_key").map_err(|e| e.to_string())?;
+
+    if key.is_empty() {
+        entry.delete_credential().map_err(|e| e.to_string())
+    } else {
+        entry.set_password(&key).map_err(|e| e.to_string())
+    }
+}
+
+#[tauri::command]
+fn get_api_key() -> Result<String, String> {
+    let entry = match Entry::new("com.silas.maggus", "mistral_api_key") {
+        Ok(e) => e,
+        Err(_) => return Ok(String::new()),
+    };
+
+    match entry.get_password() {
+        Ok(pwd) => Ok(pwd),
+        Err(_) => Ok(String::new()),
+    }
 }
 
 #[command]
@@ -398,18 +422,7 @@ async fn analyze_document(
     doc_type: String,
 ) -> Result<Value, String> {
     dotenv().ok();
-    let store = app
-        .store("settings.json")
-        .map_err(|e| format!("Store Fehler: {}", e))?;
-
-    let api_key_val = store
-        .get("apiKey")
-        .ok_or("API Key nicht in Einstellungen gefunden.")?;
-
-    let api_key = api_key_val
-        .as_str()
-        .ok_or("API Key hat falsches Format")?
-        .to_string();
+    let api_key = get_api_key()?;
 
     if api_key.trim().is_empty() {
         return Err("API Key ist leer. Bitte in den Einstellungen eintragen.".to_string());
@@ -504,7 +517,12 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_store::Builder::default().build())
-        .invoke_handler(tauri::generate_handler![analyze_document, export_to_excel])
+        .invoke_handler(tauri::generate_handler![
+            analyze_document,
+            export_to_excel,
+            save_api_key,
+            get_api_key
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
