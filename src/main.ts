@@ -16,6 +16,7 @@ interface PdfDataRow {
   fullPath: string;
   docType: "auftrag" | "rechnung";
   confirmed: boolean;
+  warnings?: boolean;
 
   kunde?: string | null;
   lieferant?: string | null;
@@ -171,11 +172,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     });
 
   settingsBtn?.addEventListener("click", async () => {
-    const [apiKey, pdfPath, excelPath, theme] = await Promise.all([
+    const [apiKey, pdfPath, excelPath] = await Promise.all([
       invoke<string>("get_api_key"),
       store?.get<string>("defaultPdfPath"),
       store?.get<string>("defaultExcelPath"),
-      store?.get<string>("defaultTheme"),
     ]);
 
     if (apiKey) apiKeyInput.value = apiKey;
@@ -448,6 +448,7 @@ async function handleReseachStart() {
             newRow.pdfName = "";
             newRow.fullPath = "";
             newRow.confirmed = false;
+            newRow.warnings = _row.warnings || false;
           }
 
           newRow.produkt = prod.produkt;
@@ -465,6 +466,7 @@ async function handleReseachStart() {
         });
       } else {
         const errorRow = { ..._row };
+        errorRow.warnings = true;
         if (!aiResults[index]) {
           errorRow.anmerkungen = "Fehler: PDF konnte nicht gelesen werden.";
         } else if (!aiResult) {
@@ -550,12 +552,17 @@ function updateFileUI() {
           lieferant = parts[2]?.split("-")[0] || null;
         }
 
+        const missingData = isInvoice
+          ? !datumRechnung || !nummerAuftrag || !kunde || !lieferant
+          : !datumAuftrag || !nummerAuftrag || !kunde || !lieferant;
+
         return {
           id: nextId++,
           pdfName: fileName,
           fullPath: path,
           docType,
           confirmed: false,
+          warnings: missingData,
           kunde,
           lieferant,
           datumAuftrag: datumAuftrag || null,
@@ -856,38 +863,39 @@ document.addEventListener("DOMContentLoaded", () => {
     fillHandle: true,
     cells(row, col) {
       if (!hot) return {};
-
       const cellProps: any = {};
-
       const classList = ["htEllipsis"];
 
       if (col === 0) {
         classList.push("htLink", "pdf-with-checkbox");
       }
 
-      const rowData = hot.getSourceDataAtRow(row) as PdfDataRow;
+      const rowData = hot.getSourceDataAtRow(row) as PdfDataRow | undefined;
+
       if (rowData) {
         if (rowData.confirmed) {
           classList.push("confirmed-row");
+        } else if (rowData.warnings) {
+          classList.push("warning-row");
         }
       }
 
       cellProps.className = classList.join(" ");
-
       return cellProps;
     },
     afterRender() {
       setupHeaderCheckbox();
     },
-    afterChange(changes, _source) {
-      if (!changes) return;
-      for (const c of changes) {
-        const prop = c[1];
+    afterChange: (changes, source) => {
+      if (source === "loadData" || !changes) return;
+
+      changes.forEach(([row, prop]) => {
         if (prop === "confirmed") {
           updateHeaderCheckboxState();
-          break;
+          hot!.render();
+          return;
         }
-      }
+      });
     },
     afterCreateRow: (index, amount, source) => {
       if (source === "loadData" || !hot) return;
@@ -903,7 +911,6 @@ document.addEventListener("DOMContentLoaded", () => {
             const props: (keyof PdfDataRow)[] = [
               "fullPath",
               "docType",
-              "confirmed",
               "kunde",
               "lieferant",
               "datumAuftrag",

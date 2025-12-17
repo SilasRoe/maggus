@@ -808,3 +808,24 @@ h1 {
   top: 1.2rem;
   right: 1.5rem;
 }
+
+.warning-row {
+  background-color: #fff3cd !important; /* Helles Gelb/Orange für Light Mode */
+}
+
+/* Warning explizit für Handsontable Zellen überschreiben */
+.handsontable .htCore td.warning-row,
+.handsontable .htCore td.warning-row .wtHolder {
+  background-color: #fff3cd !important;
+}
+
+[data-theme="dark"] .warning-row {
+  background-color: #584c24 !important; /* Dunkles Orange/Braun für Dark Mode */
+  color: #ffe8b3 !important; /* Hellerer Text für Kontrast */
+}
+
+[data-theme="dark"] .handsontable .htCore td.warning-row,
+[data-theme="dark"] .handsontable .htCore td.warning-row .wtHolder {
+  background-color: #584c24 !important;
+  color: #ffe8b3 !important;
+}
