@@ -199,10 +199,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       await store?.save();
 
       settingsModal!.style.display = "none";
-      showToast("Einstellungen gespeichert", "success");
+      showToast("Impostazioni salvate", "success");
     } catch (err) {
-      console.error("Fehler beim Speichern:", err);
-      showToast(`Fehler beim Speichern: ${err}`, "error");
+      console.error("Errore durante il salvataggio:", err);
+      showToast(`Errore durante il salvataggio: ${err}`, "error");
     }
   });
 
@@ -258,8 +258,14 @@ async function loadPdfsFromDirectory(path: string) {
 
     updateFileUI();
   } catch (e) {
-    console.error("Fehler beim Laden des Standardordners:", e);
-    showToast(`Fehler beim Laden des Ordners: ${path}`, "error");
+    console.error(
+      "Errore durante il caricamento della cartella predefinita:",
+      e
+    );
+    showToast(
+      `Errore durante il caricamento della cartella predefinita: ${path}`,
+      "error"
+    );
   }
 }
 
@@ -468,11 +474,11 @@ async function handleReseachStart() {
         const errorRow = { ..._row };
         errorRow.warnings = true;
         if (!aiResults[index]) {
-          errorRow.anmerkungen = "Fehler: PDF konnte nicht gelesen werden.";
+          errorRow.anmerkungen = "Errore: impossibile leggere il PDF.";
         } else if (!aiResult) {
-          errorRow.anmerkungen = "Fehler: KI hat nicht geantwortet.";
+          errorRow.anmerkungen = "Errore: KI non ha risposto.";
         } else {
-          errorRow.anmerkungen = "Keine Produkte erkannt.";
+          errorRow.anmerkungen = "Errore: Nessun prodotto riconosciuto.";
         }
         newTableData.push(errorRow);
       }
@@ -487,8 +493,8 @@ async function handleReseachStart() {
       hot!.refreshDimensions();
     });
   } catch (error) {
-    console.error("Kritischer Fehler im Prozess:", error);
-    showToast(`Fehler: ${error}`, "error");
+    console.error("Errore critico nel processo:", error);
+    showToast(`Errore: ${error}`, "error");
   } finally {
     isProcessing = false;
     document.body.style.cursor = "default";
@@ -744,8 +750,8 @@ function setupHeaderCheckbox() {
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
     checkbox.className = "header-confirmed";
-    checkbox.title = "Alle bestätigen";
-    checkbox.setAttribute("aria-label", "Alle bestätigen");
+    checkbox.title = "Conferma tutto";
+    checkbox.setAttribute("aria-label", "Conferma tutto");
 
     checkbox.addEventListener("change", () => {
       const checked = checkbox.checked;
@@ -1007,7 +1013,7 @@ async function handleExportExcel() {
   const confirmedData = allData.filter((row) => row.confirmed);
 
   if (confirmedData.length === 0) {
-    showToast("Keine bestätigten Zeilen für den Export.", "info");
+    showToast("Nessuna riga confermata per l'esportazione.", "info");
     return;
   }
 

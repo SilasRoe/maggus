@@ -10,6 +10,7 @@ use std::fs;
 use std::fs::OpenOptions;
 use std::path::PathBuf;
 use std::time::Duration;
+use tauri::Emitter;
 use tauri::{command, AppHandle};
 use tauri_plugin_dialog::DialogExt;
 use tauri_plugin_shell::ShellExt;
@@ -93,7 +94,7 @@ async fn export_to_excel(
     file_path: Option<String>,
 ) -> Result<String, String> {
     if data.is_empty() {
-        return Err("Keine Daten ausgewählt.".to_string());
+        return Err("Nessun dato selezionato.".to_string());
     }
 
     let path_buf = if let Some(p) = file_path {
@@ -107,21 +108,21 @@ async fn export_to_excel(
 
         match file_path_opt {
             Some(p) => p.into_path().map_err(|e| e.to_string())?,
-            None => return Ok("Abbruch durch Benutzer".to_string()),
+            None => return Ok("Interruzione da parte dell'utente".to_string()),
         }
     };
     let path = path_buf.as_path();
 
     if let Err(_) = OpenOptions::new().write(true).append(true).open(path) {
-        return Err("Zugriff verweigert! Datei ist geöffnet.".to_string());
+        return Err("Accesso negato! Il file è aperto.".to_string());
     }
 
-    let mut book =
-        umya_spreadsheet::reader::xlsx::read(path).map_err(|e| format!("Lesefehler: {}", e))?;
+    let mut book = umya_spreadsheet::reader::xlsx::read(path)
+        .map_err(|e| format!("Errore di lettura: {}", e))?;
 
     let sheet = book
         .get_sheet_mut(&0)
-        .ok_or("Kein Arbeitsblatt gefunden.".to_string())?;
+        .ok_or("Nessun foglio di lavoro trovato.".to_string())?;
 
     let highest_row = sheet.get_highest_row();
 
@@ -195,6 +196,9 @@ async fn export_to_excel(
     let mut processing_queue: Vec<ExportRow> = merged_input_map.into_values().collect();
     processing_queue.append(&mut unmatchable_rows);
 
+    let total_ops = processing_queue.len();
+    let mut current_progress = 0;
+
     let mut rows_to_insert: Vec<ExportRow> = Vec::new();
     let mut updated_count = 0;
 
@@ -229,6 +233,14 @@ async fn export_to_excel(
                 }
             }
             updated_count += 1;
+
+            current_progress += 1;
+            if current_progress % 10 == 0 || current_progress == total_ops {
+                let _ = app.emit(
+                    "excel-progress",
+                    json!({ "current": current_progress, "total": total_ops }),
+                );
+            }
         } else {
             rows_to_insert.push(row);
         }
@@ -352,16 +364,24 @@ async fn export_to_excel(
                     let new_formula = adjust_formula(&template_formula, formula_source_row, r);
                     sheet.get_cell_mut((13, r)).set_formula(new_formula);
                 }
+
+                current_progress += 1;
+                if current_progress % 10 == 0 || current_progress == total_ops {
+                    let _ = app.emit(
+                        "excel-progress",
+                        json!({ "current": current_progress, "total": total_ops }),
+                    );
+                }
             }
         }
     }
 
     let _ = umya_spreadsheet::writer::xlsx::write(&book, path)
-        .map_err(|e| format!("Speicherfehler: {}", e))?;
+        .map_err(|e| format!("Errore di memoria: {}", e))?;
 
     let inserted_count = rows_to_insert.len();
     Ok(format!(
-        "Fertig: {} aktualisiert, {} neu eingefügt.",
+        "Finito: {} aggiornati, {} inseriti.",
         updated_count, inserted_count
     ))
 }
@@ -377,13 +397,13 @@ async fn run_sidecar(app: &AppHandle, path: &str, use_layout: bool) -> Result<St
     let sidecar_command = app
         .shell()
         .sidecar("pdftotext")
-        .map_err(|e| format!("Sidecar Konfiguration Fehler: {}", e))?
+        .map_err(|e| format!("Errore di configurazione del sidecar: {}", e))?
         .args(&args);
 
     let output = sidecar_command
         .output()
         .await
-        .map_err(|e| format!("Konnte Sidecar nicht ausführen: {}", e))?;
+        .map_err(|e| format!("Impossibile eseguire Sidecar: {}", e))?;
 
     if output.status.success() {
         Ok(String::from_utf8_lossy(&output.stdout).to_string())
@@ -407,10 +427,10 @@ async fn call_llm(client: &reqwest::Client, api_key: &str, prompt: &str) -> Resu
         .json(&body)
         .send()
         .await
-        .map_err(|e| format!("API Request Fehler: {}", e))?;
+        .map_err(|e| format!("Errore richiesta API: {}", e))?;
 
     if !res.status().is_success() {
-        return Err(format!("API Status Fehler: {}", res.status()));
+        return Err(format!("Errore di stato API: {}", res.status()));
     }
 
     let json_res: Value = res
@@ -420,9 +440,9 @@ async fn call_llm(client: &reqwest::Client, api_key: &str, prompt: &str) -> Resu
 
     let content_str = json_res["choices"][0]["message"]["content"]
         .as_str()
-        .ok_or("Kein Inhalt in der Antwort")?;
+        .ok_or("Nessun contenuto nella risposta")?;
 
-    serde_json::from_str(content_str).map_err(|e| format!("JSON Parse Fehler: {}", e))
+    serde_json::from_str(content_str).map_err(|e| format!("Errore di analisi JSON: {}", e))
 }
 
 async fn perform_single_ocr(
@@ -430,7 +450,7 @@ async fn perform_single_ocr(
     api_key: &str,
     path: &str,
 ) -> Result<String, String> {
-    let file_bytes = fs::read(path).map_err(|e| format!("Konnte Datei nicht lesen: {}", e))?;
+    let file_bytes = fs::read(path).map_err(|e| format!("Impossibile leggere il file: {}", e))?;
     let b64_doc = general_purpose::STANDARD.encode(file_bytes);
 
     let ocr_body = json!({
@@ -447,10 +467,10 @@ async fn perform_single_ocr(
         .json(&ocr_body)
         .send()
         .await
-        .map_err(|e| format!("OCR Request fehlgeschlagen: {}", e))?;
+        .map_err(|e| format!("Richiesta OCR non riuscita: {}", e))?;
 
     if !ocr_res.status().is_success() {
-        return Err(format!("Mistral OCR Status: {}", ocr_res.status()));
+        return Err(format!("Stato Mistral OCR: {}", ocr_res.status()));
     }
 
     let ocr_json: Value = ocr_res.json().await.map_err(|e| e.to_string())?;
@@ -463,11 +483,11 @@ async fn perform_single_ocr(
             .join("\n\n");
 
         if text.trim().is_empty() {
-            return Err("OCR Ergebnis war leer".to_string());
+            return Err("Il risultato OCR era vuoto".to_string());
         }
         Ok(text)
     } else {
-        Err("Keine Seiten im OCR Ergebnis gefunden".to_string())
+        Err("Nessuna pagina nel risultato OCR".to_string())
     }
 }
 
@@ -484,7 +504,7 @@ async fn perform_ocr_with_retry(
             Ok(text) => return Ok(text),
             Err(e) => {
                 last_error = e;
-                println!("OCR Versuch {} fehlgeschlagen: {}", attempt, last_error);
+                println!("Prova OCR {} fallito: {}", attempt, last_error);
                 if attempt < max_retries {
                     sleep(Duration::from_millis(1500)).await;
                 }
@@ -492,7 +512,7 @@ async fn perform_ocr_with_retry(
         }
     }
     Err(format!(
-        "OCR fehlgeschlagen nach {} Versuchen. Letzter Fehler: {}",
+        "OCR fallito dopo {} tentativi. Ultimo errore: {}",
         max_retries, last_error
     ))
 }
@@ -507,13 +527,13 @@ async fn analyze_document(
     let api_key = get_api_key()?;
 
     if api_key.trim().is_empty() {
-        return Err("API Key ist leer. Bitte in den Einstellungen eintragen.".to_string());
+        return Err("La chiave API è vuota. Inserirla nelle impostazioni.".to_string());
     }
 
     let client = reqwest::Client::new();
 
     let mut extracted_text = run_sidecar(&app, &path, false).await.unwrap_or_default();
-    let mut layout_instruction = "THE LAYOUT IS ‘WHITESPACE’. Columns are separated only by spaces. There are no lines. Visualize the columns.".to_string();
+    let mut layout_instruction = "THE LAYOUT IS 'WHITESPACE'. Columns are separated only by spaces. There are no lines. Visualize the columns.".to_string();
     let mut used_ocr = false;
 
     if extracted_text.trim().len() < 50 {
@@ -527,7 +547,7 @@ async fn analyze_document(
             }
             Err(e) => {
                 return Err(format!(
-                    "Kritischer Fehler: Weder PDF-Text noch OCR möglich. ({})",
+                    "Errore critico: né testo PDF né OCR possibili. ({})",
                     e
                 ));
             }
@@ -548,7 +568,7 @@ async fn analyze_document(
     };
 
     let full_prompt = format!(
-        "{}\n\nWICHTIGE LAYOUT-INFO: {}\n\nDokument Inhalt:\n{}",
+        "{}\n\\IMPORTANT LAYOUT-INFORMATION: {}\n\nDokument Inhalt:\n{}",
         base_prompt, layout_instruction, extracted_text
     );
 
@@ -559,7 +579,7 @@ async fn analyze_document(
             if let Ok(layout_text) = run_sidecar(&app, &path, true).await {
                 if layout_text.trim().len() > 50 {
                     let retry_prompt = format!(
-                        "{}\n\nWICHTIGE LAYOUT-INFO: THE LAYOUT IS LAYOUT. Preserve original PDF layout.\n\nDokument Inhalt:\n{}",
+                        "{}\n\\IMPORTANT LAYOUT-INFORMATION: THE LAYOUT IS LAYOUT. Preserve original PDF layout.\n\nDokument Inhalt:\n{}",
                         base_prompt, layout_text
                     );
 
@@ -580,7 +600,7 @@ async fn analyze_document(
                     result_obj = call_llm(&client, &api_key, &retry_prompt).await?;
                 }
                 Err(e) => {
-                    println!("Fallback OCR fehlgeschlagen: {}", e);
+                    println!("Fallback OCR non riuscito: {}", e);
                 }
             }
         } else {
