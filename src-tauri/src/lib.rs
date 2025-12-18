@@ -300,7 +300,6 @@ async fn export_to_excel(
             }
 
             let mut found_supplier_block = false;
-
             for ex in &existing_rows_for_sorting {
                 if ex.supplier == target_supplier {
                     found_supplier_block = true;
@@ -334,15 +333,13 @@ async fn export_to_excel(
                 (start_row + count, start_row + count)
             };
 
-            let template_formula = {
-                match sheet.get_cell((13, template_row)) {
-                    Some(c) => c.get_formula().to_string(),
-                    None => String::new(),
-                }
+            let template_formula = match sheet.get_cell((13, template_row)) {
+                Some(c) => c.get_formula().to_string(),
+                None => String::new(),
             };
 
-            let mut column_styles = Vec::with_capacity(13);
-            for col in 1..=13 {
+            let mut column_styles = Vec::with_capacity(18);
+            for col in 1..=18 {
                 column_styles.push(sheet.get_style((col, template_row)).clone());
             }
 
@@ -373,7 +370,6 @@ async fn export_to_excel(
                 if let Some(v) = row_data.preis {
                     sheet.get_cell_mut((8, r)).set_value_number(v);
                 }
-
                 if let Some(v) = &row_data.datum_rechnung {
                     sheet.get_cell_mut((10, r)).set_value(v);
                 }
@@ -383,14 +379,20 @@ async fn export_to_excel(
                 if let Some(v) = row_data.gelieferte_menge {
                     sheet.get_cell_mut((12, r)).set_value_number(v);
                 }
-
                 if let Some(v) = &row_data.anmerkungen {
                     sheet.get_cell_mut((18, r)).set_value(v);
                 }
 
-                for col in 1..=13 {
+                for col in 1..=18 {
                     if let Some(style) = column_styles.get((col - 1) as usize) {
-                        sheet.set_style((col, r), style.clone());
+                        let mut s = style.clone();
+
+                        if col == 1 || col == 10 {
+                            s.get_alignment_mut()
+                                .set_horizontal(umya_spreadsheet::HorizontalAlignmentValues::Right);
+                        }
+
+                        sheet.set_style((col, r), s);
                     }
                 }
 
@@ -410,12 +412,17 @@ async fn export_to_excel(
         }
     }
 
+    let _ = app.emit(
+        "excel-progress",
+        json!({ "current": total_ops, "total": total_ops }),
+    );
+
     let _ = umya_spreadsheet::writer::xlsx::write(&book, path)
         .map_err(|e| format!("Errore di memoria: {}", e))?;
 
     let inserted_count = rows_to_insert.len();
     Ok(format!(
-        "Finito: {} aggiornati, {} inseriti.",
+        "Finito: {} aggiornati, {} nuovi inseriti.",
         updated_count, inserted_count
     ))
 }

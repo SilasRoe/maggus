@@ -515,7 +515,7 @@ async function handleReseachStart() {
         } else if (!aiResult) {
           errorRow.anmerkungen = "Errore: KI non ha risposto.";
         } else {
-          errorRow.anmerkungen = "Errore: Nessun prodotto riconosciuto.";
+          errorRow.anmerkungen = "Nessun prodotto riconosciuto.";
         }
         newTableData.push(errorRow);
       }
