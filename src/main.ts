@@ -64,6 +64,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   store = await Store.load("settings.json");
   setupProgressBar();
 
+  listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
+    const droppedPaths = event.payload.paths;
+
+    if (
+      droppedPaths &&
+      Array.isArray(droppedPaths) &&
+      droppedPaths.length > 0
+    ) {
+      const pdfs = droppedPaths.filter((p) => p.toLowerCase().endsWith(".pdf"));
+
+      if (pdfs.length === 0) {
+        showToast("Nessun file PDF rilevato.", "error");
+        return;
+      }
+
+      selectedPdfPaths.push(...pdfs);
+
+      updateFileUI();
+
+      showToast(
+        `${pdfs.length} Ricezione di file tramite drag & drop.`,
+        "success"
+      );
+    }
+  });
+
   const startProcessBtn = document.querySelector(
     "#start-process-btn"
   ) as HTMLButtonElement;
