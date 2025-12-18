@@ -17,7 +17,7 @@
     </div>
 
     <div class="header-right">
-      <button id="settings-btn" class="icon-btn" title="Einstellungen">
+      <button id="settings-btn" class="icon-btn" title="Impostazioni">
         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none"
           stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <path
@@ -32,7 +32,7 @@
   <div id="settings-modal" class="modal-overlay" style="display: none;">
     <div class="modal-content">
       <div style="display: flex;">
-        <h2 class="modal-title">Einstellungen</h2>
+        <h2 class="modal-title">Impostazioni</h2>
 
         <div class="theme-toggle">
           <input type="checkbox" id="theme-toggle-input" class="theme-toggle-input" aria-label="Theme toggle">
@@ -62,28 +62,46 @@
 
       <div class="form-group">
         <label>API Key (Mistral)</label>
-        <input type="password" id="setting-api-key" class="input-field" placeholder="sk-..." />
-      </div>
+        <div class="password-container">
+          <input type="password" id="setting-api-key" class="input-field" style="padding-right: 40px;" />
 
-      <div class="form-group">
-        <label>Standard PDF Ordner</label>
-        <div class="input-group">
-          <input type="text" id="setting-pdf-path" class="input-field" readonly placeholder="Nicht ausgewählt" />
-          <button id="setting-select-pdf" class="btn btn-secondary">Wählen</button>
+          <button id="toggle-api-key-btn" class="eye-btn" type="button" title="Mostra/Nascondi">
+
+            <svg id="icon-eye" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 13c0 0 5-8 10-8s10 8 10 8"></path>
+              <circle cx="12" cy="14" r="3" fill="currentColor" stroke="none"></circle>
+            </svg>
+
+            <svg id="icon-eye-off" style="display: none;" width="20" height="20" viewBox="0 0 24 24" fill="none"
+              stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M2 13c0 0 5-8 10-8s10 8 10 8"></path>
+              <line x1="3" y1="3" x2="21" y2="21"></line>
+            </svg>
+
+          </button>
         </div>
       </div>
 
       <div class="form-group">
-        <label>Standard Excel Datei</label>
+        <label>Cartella PDF standard</label>
         <div class="input-group">
-          <input type="text" id="setting-excel-path" class="input-field" readonly placeholder="Nicht ausgewählt" />
-          <button id="setting-select-excel" class="btn btn-secondary">Wählen</button>
+          <input type="text" id="setting-pdf-path" class="input-field" readonly placeholder="Non selezionato" />
+          <button id="setting-select-pdf" class="btn btn-secondary">Selezionare</button>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label>File Excel standard</label>
+        <div class="input-group">
+          <input type="text" id="setting-excel-path" class="input-field" readonly placeholder="Non selezionato" />
+          <button id="setting-select-excel" class="btn btn-secondary">Selezionare</button>
         </div>
       </div>
 
       <div class="modal-actions">
-        <button id="close-settings-btn" class="btn btn-ghost">Abbrechen</button>
-        <button id="save-settings-btn" class="btn btn-primary">Speichern</button>
+        <button id="close-settings-btn" class="btn btn-ghost">Annulla</button>
+        <button id="save-settings-btn" class="btn btn-primary">Salva</button>
       </div>
     </div>
   </div>
@@ -94,7 +112,7 @@
     <button class="file-button" id="start-process-btn" disabled>Avvia raccolta dati</button>
   </div>
 
-  <button id="export-excel-btn" class="fab-button" title="Export confirmed rows to Excel">
+  <button id="export-excel-btn" class="fab-button" title="Esporta righe confermate in Excel">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor"
       stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>

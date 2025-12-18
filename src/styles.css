@@ -13,7 +13,7 @@
 
   /* Base colors (light theme defaults) */
   --background-color: #f6f6f6;
-  --text-color: #1e293b;
+  --text-color: #131a26;
 
   --bg-secondary: #f8fafc;
   --border-color: #e2e8f0;
@@ -35,6 +35,11 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+}
+
+body.app-loading,
+body.app-loading * {
+  cursor: wait !important;
 }
 
 [data-theme="dark"] {
@@ -775,7 +780,7 @@ h1 {
 
 /* Sekundärer Button (Wählen) - Dezent */
 .btn-secondary {
-  background-color: transparent;
+  background-color: #0f172a7e;
   border: 1px solid var(--border-color);
   color: var(--text-color);
 }
@@ -833,4 +838,32 @@ h1 {
 [data-theme="dark"] .handsontable .htCore td.warning-row .wtHolder {
   background-color: #584c24 !important;
   color: #ffe8b3 !important;
+}
+
+/* Container für Input + schwebendes Icon */
+.password-container {
+  position: relative;
+  width: 100%;
+}
+
+/* Das Icon selbst */
+.eye-btn {
+  position: absolute;
+  right: 10px; /* Abstand vom rechten Rand */
+  top: 50%;
+  transform: translateY(-50%); /* Vertikal zentrieren */
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+  color: var(--text-color);
+  opacity: 0.5; /* Dezent halbtransparent */
+  transition: opacity 0.2s, color 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.eye-btn:hover {
+  opacity: 1; /* Beim Drüberfahren voll sichtbar */
 }

@@ -155,6 +155,30 @@ document.addEventListener("DOMContentLoaded", async () => {
     "setting-excel-path"
   ) as HTMLInputElement;
 
+  const toggleApiKeyBtn = document.getElementById("toggle-api-key-btn");
+
+  if (toggleApiKeyBtn) {
+    toggleApiKeyBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+
+      const apiKeyInput = document.getElementById(
+        "setting-api-key"
+      ) as HTMLInputElement;
+      const iconEye = document.getElementById("icon-eye");
+      const iconEyeOff = document.getElementById("icon-eye-off");
+
+      if (apiKeyInput.type === "password") {
+        apiKeyInput.type = "text";
+        if (iconEye) iconEye.style.display = "none";
+        if (iconEyeOff) iconEyeOff.style.display = "block";
+      } else {
+        apiKeyInput.type = "password";
+        if (iconEye) iconEye.style.display = "block";
+        if (iconEyeOff) iconEyeOff.style.display = "none";
+      }
+    });
+  }
+
   document
     .getElementById("setting-select-pdf")
     ?.addEventListener("click", async () => {
@@ -383,7 +407,7 @@ async function handleReseachStart() {
   ) as HTMLButtonElement;
   isProcessing = true;
   if (startBtn) startBtn.disabled = true;
-  document.body.style.cursor = "wait";
+  document.body.classList.add("app-loading");
 
   try {
     const data = hot.getSourceData() as PdfDataRow[];
@@ -503,7 +527,7 @@ async function handleReseachStart() {
     showToast(`Errore: ${error}`, "error");
   } finally {
     isProcessing = false;
-    document.body.style.cursor = "default";
+    document.body.classList.remove("app-loading");
   }
 }
 
@@ -1055,7 +1079,7 @@ async function handleExportExcel() {
   let unlisten: (() => void) | null = null;
 
   try {
-    document.body.style.cursor = "wait";
+    document.body.classList.add("app-loading");
 
     setProgress(0, confirmedData.length);
 
@@ -1084,7 +1108,7 @@ async function handleExportExcel() {
   } finally {
     if (unlisten) unlisten();
     setProgress(0, 0);
-    document.body.style.cursor = "default";
+    document.body.classList.remove("app-loading");
     isProcessing = false;
   }
 }
