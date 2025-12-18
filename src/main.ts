@@ -56,34 +56,21 @@ let store: Store | null = null;
 let isProcessing = false;
 
 document.addEventListener("DOMContentLoaded", async () => {
+  const exportBtn = document.getElementById("export-excel-btn");
+  if (exportBtn) {
+    const newExportBtn = exportBtn.cloneNode(true) as HTMLElement;
+    exportBtn.parentNode?.replaceChild(newExportBtn, exportBtn);
+
+    newExportBtn.addEventListener("click", (e) => {
+      e.preventDefault();
+      handleExportExcel();
+    });
+  } else {
+    console.error("CRITICO: pulsante Esporta (#export-excel-btn) non trovato!");
+  }
+
   store = await Store.load("settings.json");
   setupProgressBar();
-
-  listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
-    const droppedPaths = event.payload.paths;
-
-    if (
-      droppedPaths &&
-      Array.isArray(droppedPaths) &&
-      droppedPaths.length > 0
-    ) {
-      const pdfs = droppedPaths.filter((p) => p.toLowerCase().endsWith(".pdf"));
-
-      if (pdfs.length === 0) {
-        showToast("Nessun file PDF rilevato.", "error");
-        return;
-      }
-
-      selectedPdfPaths.push(...pdfs);
-
-      updateFileUI();
-
-      showToast(
-        `${pdfs.length} Ricezione di file tramite drag & drop.`,
-        "success"
-      );
-    }
-  });
 
   const startProcessBtn = document.querySelector(
     "#start-process-btn"
@@ -126,9 +113,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const themeToggle = document.querySelector(
     "#theme-toggle-input"
   ) as HTMLInputElement;
-  const exportBtn = document.querySelector(
-    "#export-excel-btn"
-  ) as HTMLButtonElement;
 
   if (selectFilesBtn) {
     selectFilesBtn.addEventListener("click", handleSelectFiles);
@@ -153,10 +137,6 @@ document.addEventListener("DOMContentLoaded", async () => {
     themeToggle.setAttribute("aria-checked", String(themeToggle.checked));
     themeToggle.addEventListener("change", toggleTheme);
     toggleTheme();
-  }
-
-  if (exportBtn) {
-    exportBtn.addEventListener("click", handleExportExcel);
   }
 
   const settingsModal = document.getElementById("settings-modal");
@@ -270,6 +250,32 @@ document.addEventListener("DOMContentLoaded", async () => {
   store.get<string>("defaultPdfPath").then((path) => {
     if (path) {
       loadPdfsFromDirectory(path);
+    }
+  });
+
+  listen<{ paths: string[] }>("tauri://drag-drop", (event) => {
+    const droppedPaths = event.payload.paths;
+
+    if (
+      droppedPaths &&
+      Array.isArray(droppedPaths) &&
+      droppedPaths.length > 0
+    ) {
+      const pdfs = droppedPaths.filter((p) => p.toLowerCase().endsWith(".pdf"));
+
+      if (pdfs.length === 0) {
+        showToast("Nessun file PDF rilevato.", "error");
+        return;
+      }
+
+      selectedPdfPaths.push(...pdfs);
+
+      updateFileUI();
+
+      showToast(
+        `${pdfs.length} Ricezione di file tramite drag & drop.`,
+        "success"
+      );
     }
   });
 });
